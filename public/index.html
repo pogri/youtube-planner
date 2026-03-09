@@ -1,0 +1,1098 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>유튜브 콘텐츠 플래너</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0a0a0f;
+  --surface: #13131a;
+  --surface2: #1c1c27;
+  --border: #2a2a3a;
+  --accent: #ff3b5c;
+  --accent2: #ff8c42;
+  --accent3: #7b5ea7;
+  --green: #4caf7d;
+  --text: #f0f0f8;
+  --text-dim: #7a7a9a;
+  --text-muted: #4a4a6a;
+  --radius: 12px;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Noto Sans KR', sans-serif;
+  min-height: 100vh;
+}
+body::before {
+  content:'';
+  position:fixed; inset:0;
+  background-image:
+    linear-gradient(rgba(123,94,167,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(123,94,167,0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events:none; z-index:0;
+}
+
+/* LOGIN SCREEN */
+.login-screen {
+  position: fixed; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  z-index: 100;
+  background: var(--bg);
+}
+.login-box {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 48px 40px;
+  width: 100%; max-width: 400px;
+  text-align: center;
+}
+.login-logo {
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
+  color: var(--accent);
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  border: 1px solid var(--accent);
+  padding: 4px 12px;
+  border-radius: 2px;
+  display: inline-block;
+  margin-bottom: 24px;
+  animation: pulse-border 2s ease-in-out infinite;
+}
+@keyframes pulse-border {
+  0%,100%{box-shadow:0 0 0 0 rgba(255,59,92,0);}
+  50%{box-shadow:0 0 12px 2px rgba(255,59,92,0.3);}
+}
+.login-title {
+  font-size: 22px; font-weight: 900;
+  letter-spacing: -0.5px; margin-bottom: 8px;
+  background: linear-gradient(135deg, #fff 0%, #ff3b5c 60%, #ff8c42 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+.login-sub { color: var(--text-dim); font-size: 13px; margin-bottom: 32px; }
+.login-input {
+  width: 100%;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px 16px;
+  color: var(--text);
+  font-family: 'Noto Sans KR', sans-serif;
+  font-size: 14px;
+  outline: none;
+  margin-bottom: 12px;
+  transition: border-color 0.2s;
+  text-align: center;
+}
+.login-input:focus { border-color: var(--accent3); }
+.login-btn {
+  width: 100%;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 13px;
+  font-family: 'Noto Sans KR', sans-serif;
+  font-size: 15px; font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-top: 4px;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+.login-btn:hover { background: #e02d4e; transform: translateY(-1px); box-shadow: 0 4px 20px rgba(255,59,92,0.4); }
+.login-err {
+  background: rgba(255,59,92,0.08);
+  border: 1px solid rgba(255,59,92,0.2);
+  border-radius: 8px; padding: 10px; font-size: 13px;
+  color: #ff8a9a; margin-top: 12px; display: none;
+}
+.admin-toggle {
+  margin-top: 20px; color: var(--text-muted);
+  font-size: 12px; cursor: pointer; text-decoration: underline;
+}
+.admin-toggle:hover { color: var(--text-dim); }
+
+/* MAIN APP */
+.app-screen { display: none; }
+.container {
+  max-width: 900px; margin: 0 auto;
+  padding: 40px 20px 80px;
+  position: relative; z-index: 1;
+}
+
+/* Top bar */
+.topbar {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 48px; flex-wrap: wrap; gap: 12px;
+}
+.topbar-left h1 {
+  font-size: clamp(22px, 4vw, 36px); font-weight: 900;
+  letter-spacing: -1px;
+  background: linear-gradient(135deg, #fff 0%, #ff3b5c 50%, #ff8c42 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+.topbar-left p { color: var(--text-dim); font-size: 13px; margin-top: 4px; }
+.topbar-right { display: flex; align-items: center; gap: 12px; }
+.credit-badge {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 6px 16px;
+  font-size: 13px; font-weight: 500;
+  display: flex; align-items: center; gap: 6px;
+}
+.credit-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); }
+.credit-dot.low { background: var(--accent2); }
+.credit-dot.empty { background: var(--accent); }
+.logout-btn {
+  background: transparent; border: 1px solid var(--border);
+  border-radius: 8px; padding: 6px 14px;
+  color: var(--text-dim); font-size: 12px; cursor: pointer;
+  transition: all 0.2s;
+}
+.logout-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+/* STEPS */
+.step {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin-bottom: 20px; overflow: hidden;
+  transition: border-color 0.3s;
+}
+.step.active { border-color: var(--accent3); }
+.step.done { border-color: rgba(76,175,125,0.3); }
+.step.locked { opacity: 0.35; pointer-events: none; }
+.step-header {
+  display: flex; align-items: center; gap: 16px;
+  padding: 20px 24px;
+}
+.step-num {
+  width: 36px; height: 36px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Space Mono', monospace; font-size: 14px; font-weight: 700;
+  flex-shrink: 0; transition: all 0.3s;
+}
+.step.active .step-num { background: var(--accent); color: #fff; }
+.step.done .step-num { background: rgba(76,175,125,0.2); color: var(--green); border: 1px solid rgba(76,175,125,0.4); }
+.step.locked .step-num { background: var(--surface2); color: var(--text-muted); border: 1px solid var(--border); }
+.step-title { font-size: 16px; font-weight: 700; letter-spacing: -0.3px; }
+.step-subtitle { font-size: 12px; color: var(--text-dim); margin-top: 2px; font-weight: 300; }
+.step-body { padding: 0 24px 24px; }
+
+/* Inputs */
+.input-row { display: flex; gap: 10px; flex-wrap: wrap; }
+.input-field {
+  flex: 1; min-width: 180px;
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: 8px; padding: 12px 16px;
+  color: var(--text); font-family: 'Noto Sans KR', sans-serif;
+  font-size: 14px; outline: none; transition: border-color 0.2s;
+}
+.input-field:focus { border-color: var(--accent3); }
+.input-field::placeholder { color: var(--text-muted); }
+select.input-field { cursor: pointer; }
+
+.btn {
+  padding: 12px 22px; border-radius: 8px; border: none;
+  font-family: 'Noto Sans KR', sans-serif;
+  font-size: 14px; font-weight: 700; cursor: pointer;
+  transition: all 0.2s; white-space: nowrap;
+  display: inline-flex; align-items: center; gap: 8px;
+}
+.btn-primary { background: var(--accent); color: #fff; }
+.btn-primary:hover:not(:disabled) { background: #e02d4e; transform: translateY(-1px); box-shadow: 0 4px 20px rgba(255,59,92,0.4); }
+.btn-primary:disabled { background: var(--surface2); color: var(--text-muted); cursor: not-allowed; }
+.btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+.btn-secondary:hover { border-color: var(--accent3); }
+.btn-ghost { background: transparent; color: var(--text-dim); border: 1px solid var(--border); font-size: 13px; padding: 8px 14px; }
+.btn-ghost:hover { border-color: var(--accent3); color: var(--text); }
+
+.spinner { width:16px; height:16px; border:2px solid rgba(255,255,255,0.3); border-top-color:#fff; border-radius:50%; animation:spin 0.7s linear infinite; display:none; }
+.loading .spinner { display:block; }
+.loading .btn-text { display:none; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Topics */
+.topics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 8px; margin-top: 16px;
+}
+.topic-card {
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 8px; padding: 12px 14px; cursor: pointer;
+  transition: all 0.15s; display: flex; align-items: flex-start;
+  gap: 10px; position: relative;
+}
+.topic-card:hover { border-color: var(--accent3); background: rgba(123,94,167,0.1); }
+.topic-card.selected { border-color: var(--accent); background: rgba(255,59,92,0.08); }
+.topic-card.selected::after { content:'✓'; position:absolute; top:8px; right:10px; color:var(--accent); font-size:12px; font-weight:700; }
+.topic-num { font-family:'Space Mono',monospace; font-size:10px; color:var(--text-muted); margin-top:2px; flex-shrink:0; min-width:18px; }
+.topic-text { font-size:13px; line-height:1.4; font-weight:500; }
+.selection-hint { margin-top:12px; font-size:12px; color:var(--text-dim); }
+.sel-count { display:inline-block; background:var(--accent); color:#fff; font-size:11px; font-weight:700; padding:2px 8px; border-radius:10px; margin-left:4px; }
+
+/* Mixed topic editor */
+.mixed-topic-area { margin-top: 16px; }
+.mixed-topic-label { font-size:11px; color:var(--accent2); font-family:'Space Mono',monospace; letter-spacing:1.5px; text-transform:uppercase; margin-bottom:8px; }
+.mixed-topic-input {
+  width: 100%; background: var(--bg); border: 1px solid var(--accent3);
+  border-radius: 8px; padding: 12px 16px; color: var(--text);
+  font-family: 'Noto Sans KR', sans-serif; font-size: 15px; font-weight: 500;
+  outline: none; transition: border-color 0.2s;
+}
+.mixed-topic-input:focus { border-color: var(--accent); }
+.mixed-hint { font-size:12px; color:var(--text-muted); margin-top:6px; }
+
+/* Cast */
+.cast-config { display:flex; gap:12px; flex-wrap:wrap; margin-top:4px; }
+.cast-group { display:flex; flex-direction:column; gap:6px; flex:1; min-width:130px; }
+.cast-group label { font-size:11px; color:var(--text-dim); font-weight:500; letter-spacing:0.5px; }
+.roles-row { display:flex; gap:10px; flex-wrap:wrap; margin-top:14px; }
+.role-field-wrap { display:flex; flex-direction:column; gap:5px; }
+.role-field-wrap label { font-size:11px; color:var(--text-dim); }
+.role-select { background:var(--bg); border:1px solid var(--border); border-radius:8px; padding:9px 12px; color:var(--text); font-family:'Noto Sans KR',sans-serif; font-size:13px; outline:none; cursor:pointer; min-width:130px; }
+.role-select:focus { border-color:var(--accent3); }
+.role-custom { background:var(--bg); border:1px solid var(--border); border-radius:8px; padding:9px 12px; color:var(--text); font-family:'Noto Sans KR',sans-serif; font-size:13px; outline:none; width:130px; margin-top:4px; display:none; }
+.role-custom:focus { border-color:var(--accent3); }
+
+/* Script output */
+.script-output {
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: 8px; padding: 20px; margin-top: 16px;
+  line-height: 2; font-size: 14px; white-space: pre-wrap;
+}
+
+/* Shorts & Titles */
+.output-block {
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: 8px; padding: 20px; margin-top: 12px;
+}
+.output-block h4 {
+  font-size:11px; color:var(--accent2); letter-spacing:2px;
+  text-transform:uppercase; font-family:'Space Mono',monospace; margin-bottom:14px;
+}
+.shorts-item { display:flex; gap:12px; padding:12px 0; border-bottom:1px solid var(--border); }
+.shorts-item:last-child { border-bottom:none; }
+.shorts-num { font-family:'Space Mono',monospace; font-size:18px; font-weight:700; color:var(--accent); min-width:28px; }
+.shorts-content strong { font-size:14px; display:block; margin-bottom:4px; }
+.shorts-content p { font-size:12px; color:var(--text-dim); line-height:1.5; }
+.title-item { display:flex; gap:12px; align-items:flex-start; padding:10px 0; border-bottom:1px solid var(--border); }
+.title-item:last-child { border-bottom:none; }
+.title-n { font-family:'Space Mono',monospace; font-size:11px; color:var(--accent2); min-width:18px; margin-top:2px; }
+.title-text { font-size:14px; font-weight:500; line-height:1.4; }
+
+.err-msg { background:rgba(255,59,92,0.08); border:1px solid rgba(255,59,92,0.2); border-radius:8px; padding:12px 16px; font-size:13px; color:#ff8a9a; margin-top:12px; display:none; }
+
+.divider { height:1px; background:var(--border); margin:16px 0; }
+
+.reset-area { text-align:center; margin-top:32px; }
+
+/* Selected topic tags */
+.topic-tags { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px; }
+.topic-tag { background:rgba(255,59,92,0.1); border:1px solid rgba(255,59,92,0.3); color:var(--text); font-size:12px; padding:4px 12px; border-radius:20px; }
+
+/* ADMIN PANEL */
+.admin-screen { display:none; }
+.admin-container { max-width:800px; margin:0 auto; padding:40px 20px 80px; position:relative; z-index:1; }
+.admin-header { margin-bottom:32px; }
+.admin-header h1 { font-size:28px; font-weight:900; letter-spacing:-1px; }
+.admin-header p { color:var(--text-dim); font-size:13px; margin-top:4px; }
+.admin-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:24px; margin-bottom:20px; }
+.admin-card h3 { font-size:14px; font-weight:700; margin-bottom:16px; color:var(--accent2); letter-spacing:0.5px; }
+.admin-row { display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; }
+.admin-field { display:flex; flex-direction:column; gap:6px; flex:1; min-width:120px; }
+.admin-field label { font-size:11px; color:var(--text-dim); }
+.admin-input { background:var(--bg); border:1px solid var(--border); border-radius:8px; padding:10px 14px; color:var(--text); font-family:'Noto Sans KR',sans-serif; font-size:14px; outline:none; }
+.admin-input:focus { border-color:var(--accent3); }
+.user-table { width:100%; border-collapse:collapse; font-size:13px; }
+.user-table th { text-align:left; padding:8px 12px; color:var(--text-dim); font-weight:500; border-bottom:1px solid var(--border); font-size:11px; text-transform:uppercase; letter-spacing:1px; }
+.user-table td { padding:10px 12px; border-bottom:1px solid rgba(42,42,58,0.5); }
+.user-table tr:last-child td { border-bottom:none; }
+.badge { display:inline-block; padding:2px 8px; border-radius:10px; font-size:11px; font-weight:700; }
+.badge-active { background:rgba(76,175,125,0.15); color:var(--green); }
+.badge-inactive { background:rgba(255,59,92,0.1); color:var(--accent); }
+.badge-low { background:rgba(255,140,66,0.15); color:var(--accent2); }
+.admin-msg { font-size:13px; padding:10px 14px; border-radius:8px; margin-top:10px; display:none; }
+.admin-msg.ok { background:rgba(76,175,125,0.1); color:var(--green); border:1px solid rgba(76,175,125,0.2); }
+.admin-msg.err { background:rgba(255,59,92,0.08); color:#ff8a9a; border:1px solid rgba(255,59,92,0.2); }
+</style>
+</head>
+<body>
+
+<!-- LOGIN SCREEN -->
+<div class="login-screen" id="loginScreen">
+  <div class="login-box">
+    <div class="login-logo">YouTube Planner</div>
+    <div class="login-title">유튜브 콘텐츠<br>기획 자동화</div>
+    <div class="login-sub">아이디와 비밀번호를 입력하세요</div>
+    <input type="text" class="login-input" id="loginId" placeholder="아이디" autocomplete="off">
+    <input type="password" class="login-input" id="loginPw" placeholder="비밀번호">
+    <button class="login-btn" id="loginBtn" onclick="doLogin()">
+      <span class="spinner"></span>
+      <span class="btn-text">로그인</span>
+    </button>
+    <div class="login-err" id="loginErr"></div>
+    <div class="admin-toggle" onclick="toggleAdminLogin()">관리자 로그인</div>
+  </div>
+</div>
+
+<!-- MAIN APP SCREEN -->
+<div class="app-screen" id="appScreen">
+  <div class="container">
+    <div class="topbar">
+      <div class="topbar-left">
+        <h1>유튜브 콘텐츠 플래너</h1>
+        <p>키워드 → 주제 → 대본 → 쇼츠 & 제목까지 자동 기획</p>
+      </div>
+      <div class="topbar-right">
+        <div class="credit-badge">
+          <div class="credit-dot" id="creditDot"></div>
+          <span id="creditText">크레딧 로딩중...</span>
+        </div>
+        <button class="logout-btn" onclick="doLogout()">로그아웃</button>
+      </div>
+    </div>
+
+    <!-- STEP 1 -->
+    <div class="step active" id="step1">
+      <div class="step-header">
+        <div class="step-num">1</div>
+        <div>
+          <div class="step-title">키워드 입력</div>
+          <div class="step-subtitle">채널 주제나 다루고 싶은 키워드를 입력하세요</div>
+        </div>
+      </div>
+      <div class="step-body">
+        <div class="input-row">
+          <input type="text" class="input-field" id="keyword" placeholder="예: 다이어트, 부동산 투자, 육아, 직장인 스트레스...">
+          <select class="input-field" id="channelType" style="max-width:160px;">
+            <option value="정보/교육">정보/교육</option>
+            <option value="의학/건강">의학/건강</option>
+            <option value="재테크/경제">재테크/경제</option>
+            <option value="예능/오락">예능/오락</option>
+            <option value="라이프스타일">라이프스타일</option>
+            <option value="법률/상담">법률/상담</option>
+            <option value="시사/뉴스">시사/뉴스</option>
+          </select>
+          <button class="btn btn-primary" id="btn1" onclick="getTopics()">
+            <span class="spinner"></span>
+            <span class="btn-text">주제 20개 추천받기 →</span>
+          </button>
+        </div>
+        <div class="err-msg" id="err1"></div>
+      </div>
+    </div>
+
+    <!-- STEP 2 -->
+    <div class="step locked" id="step2">
+      <div class="step-header">
+        <div class="step-num">2</div>
+        <div>
+          <div class="step-title">주제 선택</div>
+          <div class="step-subtitle">2개를 선택하면 AI가 믹스해서 최종 주제를 만들어줍니다</div>
+        </div>
+      </div>
+      <div class="step-body">
+        <div id="topicsContainer"></div>
+        <div class="selection-hint">주제를 2개 선택해주세요 <span class="sel-count" id="selCount">0</span> / 2</div>
+
+        <!-- 믹스 주제 편집 -->
+        <div class="mixed-topic-area" id="mixedTopicArea" style="display:none;">
+          <div class="divider"></div>
+          <div class="mixed-topic-label">🎯 AI가 제안하는 최종 주제</div>
+          <input type="text" class="mixed-topic-input" id="mixedTopicInput" placeholder="주제를 수정할 수 있습니다...">
+          <div class="mixed-hint">💡 원하는 방향으로 자유롭게 수정하세요. 예: "의사들의 취미생활"</div>
+        </div>
+
+        <div style="margin-top:16px; display:flex; gap:10px; flex-wrap:wrap;">
+          <button class="btn btn-primary" id="btn2" onclick="goToStep3()" disabled>
+            출연자 설정으로 →
+          </button>
+          <button class="btn btn-ghost" id="remixBtn" onclick="remixTopics()" style="display:none;">
+            <span class="spinner"></span>
+            <span class="btn-text">🔄 주제 다시 믹스</span>
+          </button>
+        </div>
+        <div class="err-msg" id="err2"></div>
+      </div>
+    </div>
+
+    <!-- STEP 3 -->
+    <div class="step locked" id="step3">
+      <div class="step-header">
+        <div class="step-num">3</div>
+        <div>
+          <div class="step-title">출연자 설정</div>
+          <div class="step-subtitle">출연자 수와 각 역할을 지정하세요</div>
+        </div>
+      </div>
+      <div class="step-body">
+        <div class="topic-tags" id="finalTopicDisplay"></div>
+        <div class="cast-config">
+          <div class="cast-group">
+            <label>출연자 수</label>
+            <select class="input-field" id="castCount" onchange="updateCastFields()" style="max-width:160px;">
+              <option value="1">1명 (단독 진행)</option>
+              <option value="2" selected>2명</option>
+              <option value="3">3명</option>
+            </select>
+          </div>
+          <div class="cast-group">
+            <label>진행 형식</label>
+            <select class="input-field" id="castFormat" style="max-width:160px;">
+              <option value="토론/논쟁">토론 / 논쟁형</option>
+              <option value="설명/강의">설명 / 강의형</option>
+              <option value="인터뷰">인터뷰형</option>
+              <option value="예능/버라이어티">예능형</option>
+              <option value="정보공유 대담">대담형</option>
+            </select>
+          </div>
+          <div class="cast-group">
+            <label>영상 길이</label>
+            <select class="input-field" id="videoLength" style="max-width:160px;">
+              <option value="5-8분">5~8분</option>
+              <option value="10-15분" selected>10~15분</option>
+              <option value="20-30분">20~30분</option>
+            </select>
+          </div>
+        </div>
+        <div class="roles-row" id="rolesRow"></div>
+        <div style="margin-top:20px;">
+          <button class="btn btn-primary" id="btn3" onclick="generateScript()">
+            <span class="spinner"></span>
+            <span class="btn-text">대본 생성하기 →</span>
+          </button>
+        </div>
+        <div class="err-msg" id="err3"></div>
+      </div>
+    </div>
+
+    <!-- STEP 4 -->
+    <div class="step locked" id="step4">
+      <div class="step-header">
+        <div class="step-num">4</div>
+        <div>
+          <div class="step-title">생성된 대본</div>
+          <div class="step-subtitle">출연자별 색상으로 구분된 대본입니다</div>
+        </div>
+      </div>
+      <div class="step-body">
+        <div class="script-output" id="scriptOutput"></div>
+        <div style="margin-top:16px;">
+          <button class="btn btn-primary" id="btn4" onclick="generateShortsAndTitles()">
+            <span class="spinner"></span>
+            <span class="btn-text">쇼츠 & 제목 추천받기 →</span>
+          </button>
+        </div>
+        <div class="err-msg" id="err4"></div>
+      </div>
+    </div>
+
+    <!-- STEP 5 -->
+    <div class="step locked" id="step5">
+      <div class="step-header">
+        <div class="step-num">5</div>
+        <div>
+          <div class="step-title">쇼츠 추천 & 제목</div>
+          <div class="step-subtitle">구독자를 끌어당길 쇼츠 구간 6곳 + 제목 6개</div>
+        </div>
+      </div>
+      <div class="step-body">
+        <div class="output-block">
+          <h4>🎬 추천 쇼츠 구간 6곳</h4>
+          <div id="shortsContent"></div>
+        </div>
+        <div class="output-block">
+          <h4>✏️ 추천 제목 6개</h4>
+          <div id="titlesContent"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="reset-area">
+      <button class="btn btn-secondary" onclick="resetAll()">↺ 처음부터 다시 시작</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADMIN SCREEN -->
+<div class="admin-screen" id="adminScreen">
+  <div class="admin-container">
+    <div class="admin-header">
+      <h1>⚙️ 관리자 패널</h1>
+      <p>사용자 계정 및 크레딧 관리</p>
+    </div>
+
+    <div class="admin-card">
+      <h3>새 게스트 계정 생성</h3>
+      <div class="admin-row">
+        <div class="admin-field">
+          <label>아이디</label>
+          <input type="text" class="admin-input" id="newUserId" placeholder="guest01">
+        </div>
+        <div class="admin-field">
+          <label>비밀번호</label>
+          <input type="text" class="admin-input" id="newUserPw" placeholder="비밀번호">
+        </div>
+        <div class="admin-field">
+          <label>크레딧</label>
+          <input type="number" class="admin-input" id="newUserCredits" value="4" min="1" style="max-width:80px;">
+        </div>
+        <button class="btn btn-primary" onclick="createUser()">계정 생성</button>
+      </div>
+      <div class="admin-msg" id="createMsg"></div>
+    </div>
+
+    <div class="admin-card">
+      <h3>사용자 목록</h3>
+      <div id="userTableWrap">
+        <p style="color:var(--text-dim); font-size:13px;">사용자 데이터를 불러오는 중...</p>
+      </div>
+    </div>
+
+    <div class="admin-card">
+      <h3>크레딧 충전</h3>
+      <div class="admin-row">
+        <div class="admin-field">
+          <label>아이디</label>
+          <input type="text" class="admin-input" id="chargeUserId" placeholder="충전할 아이디">
+        </div>
+        <div class="admin-field">
+          <label>충전 크레딧</label>
+          <input type="number" class="admin-input" id="chargeAmount" value="4" min="1" style="max-width:80px;">
+        </div>
+        <button class="btn btn-primary" onclick="chargeCredits()">크레딧 충전</button>
+      </div>
+      <div class="admin-msg" id="chargeMsg"></div>
+    </div>
+
+    <div style="text-align:center; margin-top:24px;">
+      <button class="btn btn-secondary" onclick="doLogout()">로그아웃</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===== STATE =====
+let session = { userId: null, password: null, role: null, credits: 0, used: 0, remaining: 0 };
+let selectedTopics = [];
+let finalTopic = '';
+let generatedScript = '';
+let castColors = ['#ff3b5c','#4caf7d','#ff8c42','#7b5ea7'];
+let castNames = [];
+
+const ROLE_PRESETS = ['진행자','보조 진행자','특별 게스트','깍두기','전문가','도전자','기타(직접입력)'];
+
+// ===== LOGIN =====
+document.getElementById('loginId').addEventListener('keydown', e => { if(e.key==='Enter') document.getElementById('loginPw').focus(); });
+document.getElementById('loginPw').addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
+
+function toggleAdminLogin() {
+  const id = document.getElementById('loginId');
+  const hint = document.querySelector('.admin-toggle');
+  if (id.placeholder === '아이디') {
+    id.placeholder = '관리자 아이디 (admin)';
+    hint.textContent = '일반 로그인';
+  } else {
+    id.placeholder = '아이디';
+    hint.textContent = '관리자 로그인';
+  }
+}
+
+async function doLogin() {
+  const userId = document.getElementById('loginId').value.trim();
+  const password = document.getElementById('loginPw').value.trim();
+  if (!userId || !password) { showLoginErr('아이디와 비밀번호를 입력해주세요.'); return; }
+
+  const btn = document.getElementById('loginBtn');
+  setLoading(btn, true);
+  hideLoginErr();
+
+  try {
+    const res = await fetch('/api/auth', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'login', userId, password })
+    });
+    const data = await res.json();
+
+    if (!res.ok) { showLoginErr(data.error || '로그인 실패'); return; }
+
+    session = { userId, password, role: data.role, credits: data.credits, used: data.used, remaining: data.remaining };
+
+    document.getElementById('loginScreen').style.display = 'none';
+
+    if (data.role === 'admin') {
+      document.getElementById('adminScreen').style.display = 'block';
+      loadAdminUsers();
+    } else {
+      document.getElementById('appScreen').style.display = 'block';
+      updateCreditDisplay();
+    }
+  } catch(e) {
+    showLoginErr('서버 연결 오류. 잠시 후 다시 시도해주세요.');
+  } finally {
+    setLoading(btn, false);
+  }
+}
+
+function doLogout() {
+  session = { userId:null, password:null, role:null, credits:0, used:0, remaining:0 };
+  document.getElementById('appScreen').style.display = 'none';
+  document.getElementById('adminScreen').style.display = 'none';
+  document.getElementById('loginScreen').style.display = 'flex';
+  document.getElementById('loginId').value = '';
+  document.getElementById('loginPw').value = '';
+  resetAll();
+}
+
+function updateCreditDisplay() {
+  const dot = document.getElementById('creditDot');
+  const text = document.getElementById('creditText');
+  const r = session.remaining;
+  if (r === 99) { dot.className='credit-dot'; text.textContent='무제한'; return; }
+  text.textContent = `크레딧 ${r}회 남음`;
+  dot.className = 'credit-dot' + (r <= 0 ? ' empty' : r <= 1 ? ' low' : '');
+}
+
+// ===== CLAUDE API CALL =====
+async function callClaude(systemPrompt, userMessage, btnId, errId) {
+  const btn = document.getElementById(btnId);
+  setLoading(btn, true);
+  hideErr(errId);
+
+  try {
+    const res = await fetch('/api/claude', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        userId: session.userId,
+        password: session.password,
+        systemPrompt,
+        userMessage
+      })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'API 오류');
+    return data.text;
+  } catch(e) {
+    showErr(errId, '오류: ' + e.message);
+    return null;
+  } finally {
+    setLoading(btn, false);
+  }
+}
+
+async function useCredit() {
+  try {
+    const res = await fetch('/api/update-credit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId: session.userId, password: session.password })
+    });
+    const data = await res.json();
+    if (data.success) {
+      session.remaining = data.remaining;
+      session.used++;
+      updateCreditDisplay();
+    }
+  } catch(e) { /* silent */ }
+}
+
+// ===== STEP 1: GET TOPICS =====
+async function getTopics() {
+  const keyword = document.getElementById('keyword').value.trim();
+  const channelType = document.getElementById('channelType').value;
+  if (!keyword) { showErr('err1', '키워드를 입력해주세요.'); return; }
+
+  const system = `당신은 유튜브 콘텐츠 전략 전문가입니다.
+반드시 JSON 형식으로만 응답하세요. 다른 텍스트 없이 JSON만:
+{"topics": ["주제1", "주제2", ...]} (정확히 20개)`;
+
+  const user = `키워드: "${keyword}", 채널 유형: ${channelType}
+구독자가 많이 몰릴 것 같은 구체적이고 자극적인 유튜브 콘텐츠 주제 20개를 추천해주세요.
+실제 조회수가 높을 것 같은 주제, 시청자 호기심을 자극하는 주제로 다양하게.
+JSON으로만 응답하세요.`;
+
+  const result = await callClaude(system, user, 'btn1', 'err1');
+  if (!result) return;
+
+  try {
+    const clean = result.replace(/```json|```/g, '').trim();
+    const parsed = JSON.parse(clean);
+    renderTopics(parsed.topics);
+    activateStep(2);
+    markDone(1);
+  } catch(e) {
+    showErr('err1', '응답 파싱 오류. 다시 시도해주세요.');
+  }
+}
+
+function renderTopics(topics) {
+  selectedTopics = [];
+  const container = document.getElementById('topicsContainer');
+  const grid = document.createElement('div');
+  grid.className = 'topics-grid';
+  topics.forEach((t, i) => {
+    const card = document.createElement('div');
+    card.className = 'topic-card';
+    card.dataset.topic = t;
+    card.innerHTML = `<span class="topic-num">${String(i+1).padStart(2,'0')}</span><span class="topic-text">${t}</span>`;
+    card.onclick = () => toggleTopic(card, t);
+    grid.appendChild(card);
+  });
+  container.innerHTML = '';
+  container.appendChild(grid);
+  document.getElementById('mixedTopicArea').style.display = 'none';
+  document.getElementById('remixBtn').style.display = 'none';
+  document.getElementById('btn2').disabled = true;
+  updateSelHint();
+}
+
+function toggleTopic(card, topic) {
+  if (card.classList.contains('selected')) {
+    card.classList.remove('selected');
+    selectedTopics = selectedTopics.filter(t => t !== topic);
+  } else {
+    if (selectedTopics.length >= 2) {
+      document.querySelectorAll('.topic-card.selected')[0]?.classList.remove('selected');
+      selectedTopics.shift();
+    }
+    card.classList.add('selected');
+    selectedTopics.push(topic);
+  }
+  updateSelHint();
+
+  if (selectedTopics.length === 2) {
+    generateMixedTopic();
+  } else {
+    document.getElementById('mixedTopicArea').style.display = 'none';
+    document.getElementById('remixBtn').style.display = 'none';
+    document.getElementById('btn2').disabled = true;
+  }
+}
+
+function updateSelHint() {
+  document.getElementById('selCount').textContent = selectedTopics.length;
+}
+
+async function generateMixedTopic() {
+  const system = `당신은 유튜브 콘텐츠 기획자입니다. 두 주제를 자연스럽게 결합한 하나의 매력적인 영상 주제를 한 줄로만 제안하세요. 설명 없이 주제만.`;
+  const user = `주제1: ${selectedTopics[0]}\n주제2: ${selectedTopics[1]}\n두 주제를 창의적으로 결합한 유튜브 영상 주제를 한 줄로 제안하세요.`;
+
+  const remixBtn = document.getElementById('remixBtn');
+  remixBtn.style.display = 'inline-flex';
+  setLoading(remixBtn, true);
+  document.getElementById('btn2').disabled = true;
+
+  try {
+    const res = await fetch('/api/claude', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId: session.userId, password: session.password, systemPrompt: system, userMessage: user })
+    });
+    const data = await res.json();
+    if (data.text) {
+      finalTopic = data.text.trim().replace(/^["']|["']$/g,'');
+      document.getElementById('mixedTopicInput').value = finalTopic;
+      document.getElementById('mixedTopicArea').style.display = 'block';
+      document.getElementById('btn2').disabled = false;
+    }
+  } catch(e) {
+    document.getElementById('mixedTopicInput').value = `${selectedTopics[0]} × ${selectedTopics[1]}`;
+    document.getElementById('mixedTopicArea').style.display = 'block';
+    document.getElementById('btn2').disabled = false;
+  } finally {
+    setLoading(remixBtn, false);
+  }
+}
+
+async function remixTopics() {
+  await generateMixedTopic();
+}
+
+// ===== STEP 2 -> 3 =====
+function goToStep3() {
+  finalTopic = document.getElementById('mixedTopicInput').value.trim() || `${selectedTopics[0]} × ${selectedTopics[1]}`;
+  document.getElementById('finalTopicDisplay').innerHTML = `<span class="topic-tag">🎯 ${finalTopic}</span>`;
+  markDone(2);
+  activateStep(3);
+  updateCastFields();
+  document.getElementById('step3').scrollIntoView({ behavior:'smooth', block:'start' });
+}
+
+function updateCastFields() {
+  const count = parseInt(document.getElementById('castCount').value);
+  const container = document.getElementById('rolesRow');
+  container.innerHTML = '';
+  castNames = [];
+
+  for (let i = 0; i < count; i++) {
+    castNames.push(`출연자${i+1}`);
+    const wrap = document.createElement('div');
+    wrap.className = 'role-field-wrap';
+    wrap.innerHTML = `
+      <label>출연자 ${i+1}</label>
+      <select class="role-select" id="roleSelect${i}" onchange="handleRoleChange(${i})">
+        ${ROLE_PRESETS.map(r => `<option value="${r}">${r}</option>`).join('')}
+      </select>
+      <input type="text" class="role-custom" id="roleCustom${i}" placeholder="역할 직접 입력">
+    `;
+    container.appendChild(wrap);
+  }
+}
+
+function handleRoleChange(i) {
+  const sel = document.getElementById(`roleSelect${i}`).value;
+  const custom = document.getElementById(`roleCustom${i}`);
+  custom.style.display = sel === '기타(직접입력)' ? 'block' : 'none';
+}
+
+function getCastRoles() {
+  const count = parseInt(document.getElementById('castCount').value);
+  const roles = [];
+  for (let i = 0; i < count; i++) {
+    const sel = document.getElementById(`roleSelect${i}`).value;
+    if (sel === '기타(직접입력)') {
+      roles.push(document.getElementById(`roleCustom${i}`).value || '기타');
+    } else {
+      roles.push(sel);
+    }
+  }
+  return roles;
+}
+
+// ===== STEP 3: GENERATE SCRIPT =====
+async function generateScript() {
+  const roles = getCastRoles();
+  const castFormat = document.getElementById('castFormat').value;
+  const videoLength = document.getElementById('videoLength').value;
+  const count = parseInt(document.getElementById('castCount').value);
+
+  // assign names
+  castNames = roles.map((r, i) => r === '기타(직접입력)' ? `출연자${i+1}` : r);
+
+  const system = `당신은 유튜브 방송 대본 전문 작가입니다.
+대본 형식 규칙:
+- 각 섹션은 [인트로], [본론], [아웃트로] 로 구분
+- 각 출연자 발언은 반드시 "역할명:" 으로 시작 (예: "진행자:", "전문가:")
+- 자연스러운 구어체
+- 시청자를 잡는 훅 포함
+- 실제 방송에서 바로 쓸 수 있게 구체적으로`;
+
+  const user = `다음 조건으로 유튜브 대본을 작성해주세요:
+
+주제: ${finalTopic}
+출연자: ${castNames.map((n,i)=>`출연자${i+1}(${n})`).join(', ')}
+진행 형식: ${castFormat}
+영상 길이: ${videoLength}
+
+자연스럽고 재미있는 대본으로 작성해주세요.`;
+
+  const result = await callClaude(system, user, 'btn3', 'err3');
+  if (!result) return;
+
+  generatedScript = result;
+  renderColorScript(result, castNames);
+  await useCredit();
+  markDone(3);
+  activateStep(4);
+  document.getElementById('step4').scrollIntoView({ behavior:'smooth', block:'start' });
+}
+
+function renderColorScript(text, names) {
+  const output = document.getElementById('scriptOutput');
+  const lines = text.split('\n');
+  let html = '';
+
+  lines.forEach(line => {
+    let matched = false;
+    names.forEach((name, i) => {
+      const pattern = new RegExp(`^(${name}|출연자${i+1})\\s*:`, 'i');
+      if (pattern.test(line.trim())) {
+        const color = castColors[i % castColors.length];
+        const rest = line.replace(pattern, '').trim();
+        html += `<div style="margin:4px 0;"><span style="color:${color};font-weight:700;font-size:13px;">${name}:</span> ${rest}</div>`;
+        matched = true;
+      }
+    });
+    if (!matched) {
+      if (line.startsWith('[') && line.includes(']')) {
+        html += `<div style="color:var(--accent2);font-weight:700;font-size:12px;letter-spacing:1px;margin:16px 0 8px;">${line}</div>`;
+      } else {
+        html += `<div style="color:var(--text-dim);font-size:13px;">${line}</div>`;
+      }
+    }
+  });
+
+  output.innerHTML = html;
+}
+
+// ===== STEP 4: SHORTS & TITLES =====
+async function generateShortsAndTitles() {
+  const system = `당신은 유튜브 쇼츠 전략가이자 제목 카피라이터입니다.
+반드시 JSON만 응답하세요:
+{
+  "shorts": [
+    {"timestamp":"2:30~3:10","title":"쇼츠 제목","reason":"이유"},
+    ... (6개)
+  ],
+  "titles": ["제목1","제목2","제목3","제목4","제목5","제목6"]
+}`;
+
+  const user = `다음 유튜브 대본을 분석하여 쇼츠로 만들기 좋은 구간 6곳과 메인 제목 6개를 추천해주세요.
+
+대본:
+${generatedScript.substring(0, 3500)}
+
+쇼츠: 감정 반응이 클 구간, 핵심 정보 압축 구간, 반전/충격 구간
+제목: 클릭 유도, 구체적 숫자 포함, 감정 자극
+JSON으로만 응답하세요.`;
+
+  const result = await callClaude(system, user, 'btn4', 'err4');
+  if (!result) return;
+
+  try {
+    const clean = result.replace(/```json|```/g,'').trim();
+    const parsed = JSON.parse(clean);
+    renderShortsAndTitles(parsed);
+  } catch(e) {
+    document.getElementById('shortsContent').innerHTML = `<div style="white-space:pre-wrap;font-size:13px;">${result}</div>`;
+  }
+
+  markDone(4);
+  activateStep(5);
+  document.getElementById('step5').scrollIntoView({ behavior:'smooth', block:'start' });
+}
+
+function renderShortsAndTitles(data) {
+  const sc = document.getElementById('shortsContent');
+  sc.innerHTML = '';
+  (data.shorts || []).forEach((s, i) => {
+    sc.innerHTML += `<div class="shorts-item">
+      <div class="shorts-num">${i+1}</div>
+      <div class="shorts-content">
+        <strong>🎬 ${s.title || ''}</strong>
+        <p>⏱ ${s.timestamp || ''} &nbsp;|&nbsp; ${s.reason || ''}</p>
+      </div>
+    </div>`;
+  });
+
+  const tc = document.getElementById('titlesContent');
+  tc.innerHTML = '';
+  (data.titles || []).forEach((t, i) => {
+    tc.innerHTML += `<div class="title-item">
+      <div class="title-n">${i+1}.</div>
+      <div class="title-text">${t}</div>
+    </div>`;
+  });
+}
+
+// ===== ADMIN =====
+async function loadAdminUsers() {
+  try {
+    const res = await fetch('/api/auth', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'admin_login', adminKey: session.password })
+    });
+    const data = await res.json();
+    if (data.users) renderUserTable(data.users);
+  } catch(e) {}
+}
+
+function renderUserTable(users) {
+  const wrap = document.getElementById('userTableWrap');
+  const keys = Object.keys(users);
+  if (!keys.length) { wrap.innerHTML = '<p style="color:var(--text-dim);font-size:13px;">등록된 사용자 없음</p>'; return; }
+
+  let html = `<table class="user-table"><thead><tr>
+    <th>아이디</th><th>역할</th><th>크레딧</th><th>사용</th><th>잔여</th><th>상태</th>
+  </tr></thead><tbody>`;
+
+  keys.forEach(id => {
+    const u = users[id];
+    const rem = u.credits - (u.used || 0);
+    html += `<tr>
+      <td style="font-family:'Space Mono',monospace;">${id}</td>
+      <td>${u.role || 'guest'}</td>
+      <td>${u.credits}</td>
+      <td>${u.used || 0}</td>
+      <td><span class="badge ${rem <= 0 ? 'badge-inactive' : rem <= 1 ? 'badge-low' : 'badge-active'}">${rem}</span></td>
+      <td><span class="badge ${u.active ? 'badge-active' : 'badge-inactive'}">${u.active ? '활성' : '비활성'}</span></td>
+    </tr>`;
+  });
+
+  html += '</tbody></table>';
+  wrap.innerHTML = html;
+}
+
+async function createUser() {
+  const userId = document.getElementById('newUserId').value.trim();
+  const password = document.getElementById('newUserPw').value.trim();
+  const credits = parseInt(document.getElementById('newUserCredits').value);
+  if (!userId || !password) { showAdminMsg('createMsg', '아이디와 비밀번호를 입력해주세요.', 'err'); return; }
+
+  // 관리자 패널에서 직접 환경변수 수정은 불가 → 안내만
+  showAdminMsg('createMsg', `✅ 계정 정보: ID="${userId}" PW="${password}" 크레딧=${credits}\n⚠️ Vercel 환경변수 USERS_DATA에 이 계정을 추가해주세요.`, 'ok');
+}
+
+async function chargeCredits() {
+  const userId = document.getElementById('chargeUserId').value.trim();
+  const amount = parseInt(document.getElementById('chargeAmount').value);
+  if (!userId) { showAdminMsg('chargeMsg', '아이디를 입력해주세요.', 'err'); return; }
+  showAdminMsg('chargeMsg', `✅ ${userId} 계정에 ${amount}크레딧 충전 요청\n⚠️ Vercel 환경변수 USERS_DATA에서 해당 계정의 credits 값을 업데이트해주세요.`, 'ok');
+}
+
+function showAdminMsg(id, msg, type) {
+  const el = document.getElementById(id);
+  el.textContent = msg; el.className = `admin-msg ${type}`; el.style.display = 'block';
+}
+
+// ===== UTILS =====
+function activateStep(n) {
+  const s = document.getElementById(`step${n}`);
+  s.classList.remove('locked'); s.classList.add('active');
+}
+function markDone(n) {
+  const s = document.getElementById(`step${n}`);
+  s.classList.remove('active'); s.classList.add('done');
+}
+function setLoading(btn, on) {
+  if (!btn) return;
+  on ? btn.classList.add('loading') : btn.classList.remove('loading');
+  btn.disabled = on;
+}
+function showErr(id, msg) { const e=document.getElementById(id); if(e){e.textContent=msg;e.style.display='block';} }
+function hideErr(id) { const e=document.getElementById(id); if(e)e.style.display='none'; }
+function showLoginErr(msg) { const e=document.getElementById('loginErr'); e.textContent=msg; e.style.display='block'; }
+function hideLoginErr() { document.getElementById('loginErr').style.display='none'; }
+
+function resetAll() {
+  selectedTopics=[]; finalTopic=''; generatedScript=''; castNames=[];
+  ['step2','step3','step4','step5'].forEach(id => {
+    const s=document.getElementById(id);
+    s.classList.remove('active','done'); s.classList.add('locked');
+  });
+  document.getElementById('step1').classList.remove('done'); document.getElementById('step1').classList.add('active');
+  document.getElementById('keyword').value='';
+  document.getElementById('topicsContainer').innerHTML='';
+  document.getElementById('mixedTopicArea').style.display='none';
+  document.getElementById('remixBtn').style.display='none';
+  document.getElementById('scriptOutput').innerHTML='';
+  document.getElementById('shortsContent').innerHTML='';
+  document.getElementById('titlesContent').innerHTML='';
+  ['err1','err2','err3','err4'].forEach(id=>hideErr(id));
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+</script>
+</body>
+</html>
