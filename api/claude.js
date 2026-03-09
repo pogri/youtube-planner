@@ -1,3 +1,5 @@
+import { neon } from '@neondatabase/serverless';
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -7,24 +9,21 @@ export default async function handler(req, res) {
 
   const { userId, password, systemPrompt, userMessage } = req.body;
 
-  // 인증
   try {
-    const raw = process.env.USERS_DATA;
-    if (!raw) return res.status(500).json({ error: '서버 설정 오류 (USERS_DATA 없음)' });
-    const data = JSON.parse(raw);
-    const user = data.users[userId];
+    const sql = neon(process.env.DATABASE_URL);
+    const rows = await sql`SELECT * FROM users WHERE id = ${userId}`;
+    const user = rows[0];
     if (!user || user.password !== password || !user.active) {
       return res.status(401).json({ error: '인증 오류' });
     }
-    if (user.role !== 'admin' && user.role !== 'member') {
-      const remaining = user.credits - (user.used || 0);
+    if (user.role === 'guest') {
+      const remaining = user.credits - user.used;
       if (remaining <= 0) return res.status(403).json({ error: '크레딧이 소진되었습니다.' });
     }
   } catch(e) {
-    return res.status(500).json({ error: '서버 데이터 오류: ' + e.message });
+    return res.status(500).json({ error: '인증 DB 오류: ' + e.message });
   }
 
-  // Anthropic 호출
   const API_KEY = process.env.ANTHROPIC_API_KEY;
   if (!API_KEY) return res.status(500).json({ error: 'API 키 설정 오류' });
 
