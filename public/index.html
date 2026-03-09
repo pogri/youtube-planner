@@ -916,19 +916,22 @@ function renderColorScript(text, names) {
   lines.forEach(line => {
     let matched = false;
     names.forEach((name, i) => {
-      const pattern = new RegExp(`^(${name}|출연자${i+1})\\s*:`, 'i');
+      // **이름:** 또는 이름: 두 형식 모두 처리
+      const pattern = new RegExp(`^\\*{0,2}(${name})\\*{0,2}\\s*:`, 'i');
       if (pattern.test(line.trim())) {
         const color = castColors[i % castColors.length];
-        const rest = line.replace(pattern, '').trim();
-        html += `<div style="margin:4px 0;"><span style="color:${color};font-weight:700;font-size:13px;">${name}:</span> ${rest}</div>`;
+        const rest = line.replace(pattern, '').replace(/^\*+|\*+$/g, '').trim();
+        html += `<div style="margin:6px 0;"><span style="color:${color};font-weight:700;font-size:14px;">${name}:</span> ${rest}</div>`;
         matched = true;
       }
     });
     if (!matched) {
-      if (line.startsWith('[') && line.includes(']')) {
-        html += `<div style="color:var(--accent2);font-weight:700;font-size:12px;letter-spacing:1px;margin:16px 0 8px;">${line}</div>`;
-      } else {
-        html += `<div style="color:var(--text-dim);font-size:13px;">${line}</div>`;
+      if (line.includes('[') && line.includes(']')) {
+        html += `<div style="color:var(--accent2);font-weight:700;font-size:12px;letter-spacing:1px;margin:16px 0 8px;">${line.replace(/\*\*/g,'')}</div>`;
+      } else if (line.startsWith('#')) {
+        html += `<div style="color:var(--text-dim);font-size:12px;margin:8px 0;">${line.replace(/#+/g,'').replace(/\*\*/g,'').trim()}</div>`;
+      } else if (line.trim()) {
+        html += `<div style="color:var(--text);font-size:13px;margin:2px 0;">${line.replace(/\*\*/g,'')}</div>`;
       }
     }
   });
