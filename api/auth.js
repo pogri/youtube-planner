@@ -2,7 +2,6 @@ import { neon } from '@neondatabase/serverless';
 
 async function getDb() {
   const sql = neon(process.env.DATABASE_URL);
-  // 테이블 없으면 생성
   await sql`
     CREATE TABLE IF NOT EXISTS users (
       id TEXT PRIMARY KEY,
@@ -18,7 +17,6 @@ async function getDb() {
 }
 
 async function seedAdminUsers(sql) {
-  // 환경변수에서 초기 사용자 가져와서 DB에 없으면 삽입
   try {
     const raw = process.env.USERS_DATA;
     if (!raw) return;
@@ -33,6 +31,10 @@ async function seedAdminUsers(sql) {
   } catch(e) {}
 }
 
+function isAdmin(user) {
+  return user && (user.role === 'admin');
+}
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -41,11 +43,21 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   const { action, userId, password, adminKey, newUser } = req.body;
-  const ADMIN_KEY = process.env.ADMIN_KEY || 'admin1234';
 
   try {
     const sql = await getDb();
     await seedAdminUsers(sql);
+
+    async function checkAdminAuth() {
+      const ADMIN_KEY = process.env.ADMIN_KEY || 'admin1234';
+      if (adminKey === ADMIN_KEY) return true;
+      if (userId && password) {
+        const rows = await sql`SELECT * FROM users WHERE id = ${userId}`;
+        const user = rows[0];
+        if (user && user.password === password && isAdmin(user)) return true;
+      }
+      return false;
+    }
 
     if (action === 'login') {
       const rows = await sql`SELECT * FROM users WHERE id = ${userId}`;
@@ -59,7 +71,8 @@ export default async function handler(req, res) {
     }
 
     if (action === 'admin_login') {
-      if (adminKey !== ADMIN_KEY) return res.status(401).json({ error: '관리자 키가 틀렸습니다.' });
+      const authorized = await checkAdminAuth();
+      if (!authorized) return res.status(401).json({ error: '관리자 권한이 없습니다.' });
       const rows = await sql`SELECT * FROM users ORDER BY created_at DESC`;
       const users = {};
       rows.forEach(u => { users[u.id] = u; });
@@ -67,8 +80,10 @@ export default async function handler(req, res) {
     }
 
     if (action === 'create_user') {
-      if (adminKey !== ADMIN_KEY) return res.status(401).json({ error: '권한 없음' });
+      const authorized = await checkAdminAuth();
+      if (!authorized) return res.status(401).json({ error: '관리자 권한이 없습니다.' });
       const { id, pw, credits, role } = newUser;
+      if (!id || !pw) return res.status(400).json({ error: '아이디와 비밀번호를 입력해주세요.' });
       const existing = await sql`SELECT id FROM users WHERE id = ${id}`;
       if (existing.length > 0) return res.status(400).json({ error: '이미 존재하는 아이디입니다.' });
       await sql`INSERT INTO users (id, password, role, credits, used, active) VALUES (${id}, ${pw}, ${role || 'guest'}, ${credits || 4}, 0, true)`;
@@ -76,14 +91,16 @@ export default async function handler(req, res) {
     }
 
     if (action === 'charge_credits') {
-      if (adminKey !== ADMIN_KEY) return res.status(401).json({ error: '권한 없음' });
+      const authorized = await checkAdminAuth();
+      if (!authorized) return res.status(401).json({ error: '관리자 권한이 없습니다.' });
       const { id, amount } = req.body;
-      await sql`UPDATE users SET credits = credits + ${amount} WHERE id = ${id}`;
+      await sql`UPDATE users SET credits = credits + ${amount}, used = 0 WHERE id = ${id}`;
       return res.status(200).json({ success: true });
     }
 
     if (action === 'toggle_active') {
-      if (adminKey !== ADMIN_KEY) return res.status(401).json({ error: '권한 없음' });
+      const authorized = await checkAdminAuth();
+      if (!authorized) return res.status(401).json({ error: '관리자 권한이 없습니다.' });
       const { id } = req.body;
       await sql`UPDATE users SET active = NOT active WHERE id = ${id}`;
       return res.status(200).json({ success: true });
