@@ -761,22 +761,24 @@ function toggleTopic(card, topic) {
   if (card.classList.contains('selected')) {
     card.classList.remove('selected');
     selectedTopics = selectedTopics.filter(t => t !== topic);
-  } else {
-    if (selectedTopics.length >= 2) {
-      document.querySelectorAll('.topic-card.selected')[0]?.classList.remove('selected');
-      selectedTopics.shift();
-    }
-    card.classList.add('selected');
-    selectedTopics.push(topic);
-  }
-  updateSelHint();
-
-  if (selectedTopics.length === 2) {
-    generateMixedTopic();
-  } else {
+    updateSelHint();
     document.getElementById('mixedTopicArea').style.display = 'none';
     document.getElementById('remixBtn').style.display = 'none';
     document.getElementById('btn2').disabled = true;
+  } else {
+    if (selectedTopics.length >= 2) {
+      const firstSelected = document.querySelector('.topic-card.selected');
+      if (firstSelected) {
+        firstSelected.classList.remove('selected');
+        selectedTopics = selectedTopics.filter(t => t !== firstSelected.dataset.topic);
+      }
+    }
+    card.classList.add('selected');
+    selectedTopics.push(topic);
+    updateSelHint();
+    if (selectedTopics.length === 2) {
+      generateMixedTopic();
+    }
   }
 }
 
