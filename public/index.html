@@ -1041,8 +1041,23 @@ async function createUser() {
   const credits = parseInt(document.getElementById('newUserCredits').value);
   if (!userId || !password) { showAdminMsg('createMsg', '아이디와 비밀번호를 입력해주세요.', 'err'); return; }
 
-  // 관리자 패널에서 직접 환경변수 수정은 불가 → 안내만
-  showAdminMsg('createMsg', `✅ 계정 정보: ID="${userId}" PW="${password}" 크레딧=${credits}\n⚠️ Vercel 환경변수 USERS_DATA에 이 계정을 추가해주세요.`, 'ok');
+  try {
+    const res = await fetch('/api/auth', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'create_user',
+        adminKey: session.password,
+        newUser: { id: userId, pw: password, credits, role: 'guest' }
+      })
+    });
+    const data = await res.json();
+    if (!res.ok) { showAdminMsg('createMsg', data.error || '오류 발생', 'err'); return; }
+    showAdminMsg('createMsg', `✅ ${userId} 계정이 생성되었습니다!`, 'ok');
+    loadAdminUsers();
+  } catch(e) {
+    showAdminMsg('createMsg', '서버 오류: ' + e.message, 'err');
+  }
 }
 
 async function chargeCredits() {
